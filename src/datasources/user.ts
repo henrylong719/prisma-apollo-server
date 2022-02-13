@@ -1,6 +1,6 @@
 import { DataSource } from 'apollo-datasource';
 import isEmail from 'isemail';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Trip } from '@prisma/client';
 
 export class UserAPI extends DataSource {
   prisma: PrismaClient;
@@ -38,7 +38,11 @@ export class UserAPI extends DataSource {
     return user;
   }
 
-  async bookTrips({ launchIds }: { launchIds: number[] }) {
+  async bookTrips({
+    launchIds,
+  }: {
+    launchIds: number[];
+  }): Promise<Trip[] | undefined> {
     const userId = this.context.user.id;
     if (!userId) return;
 
@@ -46,16 +50,42 @@ export class UserAPI extends DataSource {
 
     // for each launch id, try to book the trip and add it to the results array
     // if successful
-    // for (const launchId of launchIds) {
-    //   const res = await this.bookTrip({ launchId });
-    //   if (res) results.push(res);
-    // }
+    for (const launchId of launchIds) {
+      const res = (await this.bookTrip({ launchId })) as never;
+      if (res) results.push(res);
+    }
 
     return results;
   }
 
-  async bookTrip({ launchId }: { launchId: number }): Promise<any> {
+  async bookTrip({ launchId }: { launchId: number }): Promise<Trip> {
     const userId = this.context.user.id;
+
+    const userBookedTrip = await this.prisma.trip.findUnique({
+      where: {
+        userId_launchId: {
+          userId,
+          launchId: Number(launchId),
+        },
+      },
+    });
+
+    if (userBookedTrip) {
+      return userBookedTrip;
+    }
+
+    const trip = await this.prisma.trip.create({
+      data: {
+        launchId: Number(launchId),
+        User: {
+          connect: {
+            id: userId,
+          },
+        },
+      },
+    });
+
+    return trip;
   }
 
   async cancelTrip({ launchId }: { launchId: number }) {
