@@ -6,16 +6,28 @@ import { resolvers } from './resolvers';
 import { LaunchAPI } from './datasources/launch';
 import { UserAPI } from './datasources/user';
 import { PrismaClient } from '.prisma/client';
+import IsEmail from 'isemail';
+
+const prisma = new PrismaClient();
 
 const server = new ApolloServer({
   typeDefs,
   resolvers,
   dataSources: () => ({
     launchAPI: new LaunchAPI(),
-    userAPI: new UserAPI({
-      prisma: new PrismaClient(),
-    }),
+    userAPI: new UserAPI({ prisma }),
   }),
+  context: async ({ req }) => {
+    // simple auth check on every request
+    const auth = (req.headers && req.headers.authorization) || '';
+    const email = Buffer.from(auth, 'base64').toString('ascii');
+    if (!IsEmail.validate) return { user: null };
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: { trips: true },
+    });
+    return { user };
+  },
 });
 
 server.listen().then(() => {
