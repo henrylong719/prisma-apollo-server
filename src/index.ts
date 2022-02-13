@@ -1,17 +1,20 @@
-require("dotenv").config();
-import { ApolloServer } from "apollo-server";
-import { typeDefs } from "./schema";
-import { resolvers } from "./resolvers";
+require('dotenv').config();
+import { ApolloServer } from 'apollo-server';
+import { typeDefs } from './schema';
+import { resolvers } from './resolvers';
 
-import { LaunchAPI } from "./datasources/launch";
-// import { UserAPI } from "./datasources/user";
+import { LaunchAPI } from './datasources/launch';
+import { UserAPI } from './datasources/user';
+import { PrismaClient } from '.prisma/client';
 
 const server = new ApolloServer({
   typeDefs,
   resolvers,
   dataSources: () => ({
     launchAPI: new LaunchAPI(),
-    // userAPI: new UserAPI({}),
+    userAPI: new UserAPI({
+      prisma: new PrismaClient(),
+    }),
   }),
 });
 

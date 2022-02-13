@@ -28,5 +28,6 @@ model Trip {
   userId    Int?
   launchId  Int?
 
+  // Only one user can book a trip with certian launch id
   @@unique([userId, launchId])
 }
