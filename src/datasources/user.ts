@@ -1,6 +1,6 @@
 import { DataSource } from 'apollo-datasource';
 import isEmail from 'isemail';
-import { PrismaClient, Trip } from '@prisma/client';
+import { PrismaClient, Pet, Trip } from '@prisma/client';
 
 export class UserAPI extends DataSource {
   prisma: PrismaClient;
@@ -90,17 +90,52 @@ export class UserAPI extends DataSource {
 
   async cancelTrip({ launchId }: { launchId: number }) {
     const userId = this.context.user.id;
+    return false;
   }
 
   async getLaunchIdsByUser(): Promise<number[]> {
     const userId = this.context.user.id;
-    return [];
+
+    const trips = await this.prisma.trip.findMany({
+      where: {
+        userId,
+      },
+    });
+
+    return trips.map((t) => t.launchId || -1).filter((id) => id !== -1);
   }
 
   async isBookedOnLaunch({ launchId }: { launchId: number }): Promise<Boolean> {
     if (!this.context || !this.context.user) return false;
     const userId = this.context.user.id;
 
-    return false;
+    const trip = await this.prisma.trip.findUnique({
+      where: {
+        userId_launchId: {
+          userId,
+          launchId: Number(launchId),
+        },
+      },
+    });
+
+    return Boolean(trip);
+  }
+
+  async addPetForUser(name: string): Promise<Pet | null> {
+    if (!this.context || !this.context.user) return null;
+    const userId = this.context.user.id;
+
+    const pet = await this.prisma.pet.create({
+      data: {
+        name,
+        User: {
+          connect: {
+            id: userId,
+          },
+        },
+      },
+    });
+
+    return pet;
   }
 }

@@ -1,4 +1,4 @@
-import { paginateResults } from "./utils";
+import { paginateResults } from './utils';
 
 export const resolvers = {
   Query: {
@@ -30,9 +30,12 @@ export const resolvers = {
     login: async (_, { email }, { dataSources }) => {
       const user = await dataSources.userAPI.findOrCreateUser({ email });
       if (user) {
-        user.token = Buffer.from(email).toString("base64");
+        user.token = Buffer.from(email).toString('base64');
         return user;
       }
+    },
+    addPetForUser: async (_, { name }, { dataSources }) => {
+      return dataSources.userAPI.addPetForUser({ name });
     },
     bookTrips: async (_, { launchIds }, { dataSources }) => {
       const results = await dataSources.userAPI.bookTrips({ launchIds });
@@ -44,7 +47,7 @@ export const resolvers = {
         success: results && results.length === launchIds.length,
         message:
           results.length === launchIds.length
-            ? "trips booked successfully"
+            ? 'trips booked successfully'
             : `the following launches couldn't be booked: ${launchIds.filter(
                 (id) => !results.includes(id)
               )}`,
@@ -57,29 +60,28 @@ export const resolvers = {
       if (!result)
         return {
           success: false,
-          message: "failed to cancel trip",
+          message: 'failed to cancel trip',
         };
 
       const launch = await dataSources.launchAPI.getLaunchById({ launchId });
       return {
         success: true,
-        message: "trip cancelled",
+        message: 'trip cancelled',
         launches: [launch],
       };
     },
   },
   Mission: {
     // The default size is 'LARGE' if not provided
-    missionPatch: (mission, { size } = { size: "LARGE" }) => {
-      return size === "SMALL"
+    missionPatch: (mission, { size } = { size: 'LARGE' }) => {
+      return size === 'SMALL'
         ? mission.missionPatchSmall
         : mission.missionPatchLarge;
     },
   },
   Launch: {
     isBooked: async (launch, _, { dataSources }) =>
-      // dataSources.userAPI.isBookedOnLaunch({ launchId: launch.id }),
-      false,
+      dataSources.userAPI.isBookedOnLaunch({ launchId: launch.id }),
   },
   User: {
     trips: async (_, __, { dataSources }) => {
@@ -92,6 +94,16 @@ export const resolvers = {
           launchIds,
         }) || []
       );
+    },
+    pet: async ({ id }, __, { prisma }) => {
+      // get ids of launches by user
+      return prisma.user.finUnique({ where: { id } }).pet();
+    },
+    Pet: {
+      owner: async ({ id }, __, { prisma }) => {
+        // get ids of launches by user
+        return prisma.pet.findUnique({ where: { id } }).owner();
+      },
     },
   },
 };

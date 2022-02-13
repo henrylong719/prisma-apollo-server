@@ -17,7 +17,8 @@ model User {
   email     String?   @unique
   token     String?
   trips     Trip[]
-
+  Pet       Pet?      @relation(fields: [petId], references: [id])
+  petId     Int?      @unique
 }
 
 model Trip {
@@ -30,4 +31,12 @@ model Trip {
 
   // Only one user can book a trip with certian launch id
   @@unique([userId, launchId])
+}
+
+// one user one pet
+
+model Pet {
+  id    Int    @id @default(autoincrement())
+  name  String
+  owner User?
 }
