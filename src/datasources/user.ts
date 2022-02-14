@@ -17,6 +17,7 @@ export class UserAPI extends DataSource {
    * like caches and context. We'll assign this.context to the request context
    * here, so we can know about the user making requests
    */
+
   initialize(config: any) {
     this.context = config.context;
   }
@@ -128,7 +129,7 @@ export class UserAPI extends DataSource {
     const pet = await this.prisma.pet.create({
       data: {
         name,
-        User: {
+        owner: {
           connect: {
             id: userId,
           },
